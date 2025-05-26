@@ -1,16 +1,19 @@
 package org.example.pages.tabs;
 
-import io.appium.java_client.AppiumBy;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;import org.openqa.selenium.interactions.PointerInput;
-import org.openqa.selenium.interactions.Sequence;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
+import static org.example.pages.tabs.CommonPageElements.*;
 
 public class ReminderHomePage {
     private final AndroidDriver driver;
@@ -21,77 +24,30 @@ public class ReminderHomePage {
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(3));
     }
 
-    private final By reminderSelector = By.id("com.reminder.callreminder.phone:id/chMultiSelected");
-    private final By selectAllButton = By.id("com.reminder.callreminder.phone:id/chAllSelected");
-    private final By deleteButton = By.id("com.reminder.callreminder.phone:id/llDelete");
-    private final By confirmDeletionButton = By.id("android:id/button1");
-
-
-    public void tapAddReminderButton() {
-        WebElement plusButton = wait.until(ExpectedConditions.elementToBeClickable(
-                By.id("com.reminder.callreminder.phone:id/sd_main_fab")));
-        plusButton.click();
-    }
-
-    public void tapTaskReminder() {
-        WebElement taskReminder = wait.until(ExpectedConditions.elementToBeClickable(
-                AppiumBy.accessibilityId("Task Reminder")
-        ));
-        taskReminder.click();
-    }
-
-    public void navigateToTaskTab() {
+    public void completeReminder(String title) {
         try {
-            By homeIcon = By.xpath("(//android.widget.ImageView[@resource-id='com.reminder.callreminder.phone:id/nav_icon'])[1]");
-            wait.until(ExpectedConditions.elementToBeClickable(homeIcon)).click();
-            Thread.sleep(50);
-        } catch (Exception ignored) {
-            System.out.println("Already on home page or button not needed.");
-        }
-    }
+            // пронаоѓање на карта со тој наслов
+            By card = By.xpath(
+                    "//androidx.recyclerview.widget.RecyclerView[@resource-id='com.reminder.callreminder.phone:id/rvTaskReminder']" +
+                            "/android.view.ViewGroup[" +
+                            ".//android.widget.TextView[@resource-id='com.reminder.callreminder.phone:id/tvEventTitle' and @text='" + title + "']" +
+                            "]"
+            );
+            WebElement cardElement = wait.until(ExpectedConditions.presenceOfElementLocated(card));
 
-    public void completeAllReminders() {
-        while (true) {
-            try {
-                By firstTaskCheckBox = By.xpath("(//android.widget.CheckBox[@resource-id='com.reminder.callreminder.phone:id/ivCompleted'])[1]");
-                WebElement box = wait.until(ExpectedConditions.elementToBeClickable(firstTaskCheckBox));
-                box.click();
-                System.out.println("Completed one reminder.");
-                Thread.sleep(100);
-            } catch (Exception e) {
-                System.out.println("No more reminders to complete.");
-                break;
-            }
-        }
-    }
+            // во најдената карта, пронаоѓање на елемент checkbox и негов клик
+            WebElement completeCheckbox = cardElement.findElement(By.id("com.reminder.callreminder.phone:id/ivCompleted"));
+            completeCheckbox.click();
 
-    private void longPressElement(WebElement element) {
-        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
-        int centerX = element.getLocation().getX() + (element.getSize().getWidth() / 2);
-        int centerY = element.getLocation().getY() + (element.getSize().getHeight() / 2);
-
-        Sequence longPress = new Sequence(finger, 1);
-        longPress.addAction(finger.createPointerMove(Duration.ZERO, PointerInput.Origin.viewport(), centerX, centerY));
-        longPress.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-        longPress.addAction(new org.openqa.selenium.interactions.Pause(finger, Duration.ofSeconds(2)));
-        longPress.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-
-        driver.perform(Collections.singletonList(longPress));
-    }
-
-    public void longPressOnTaskByIndex(int index) {
-        try {
-            String xpath = "//androidx.recyclerview.widget.RecyclerView[@resource-id='com.reminder.callreminder.phone:id/rvTaskReminder']/android.view.ViewGroup[" + index + "]";
-            WebElement task = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(xpath)));
-            longPressElement(task);
+            System.out.println("Reminder with title \"" + title + "\" marked as completed.");
         } catch (Exception e) {
-            System.out.println("Task with index " + index + " not found or could not be long-pressed.");
+            System.out.println("Failed to complete reminder with title \"" + title + "\": " + e.getMessage());
         }
     }
 
     public void deleteAllReminders() {
         try {
-            List<WebElement> reminders = driver.findElements(reminderSelector);
+            List<WebElement> reminders = driver.findElements(SELECTED_ELEMENT_CHECK);
 
             if (reminders.isEmpty()) {
                 System.out.println("No reminders found. Nothing to delete.");
@@ -99,19 +55,18 @@ public class ReminderHomePage {
             }
 
             if (reminders.size() > 1) {
-                WebElement selectAll = wait.until(ExpectedConditions.elementToBeClickable(selectAllButton));
+                WebElement selectAll = wait.until(ExpectedConditions.elementToBeClickable(SELECT_ALL_BUTTON));
                 selectAll.click();
                 System.out.println("Selected all reminders.");
             }
 
-            WebElement delete = wait.until(ExpectedConditions.elementToBeClickable(deleteButton));
+            WebElement delete = wait.until(ExpectedConditions.elementToBeClickable(DELETE_BUTTON));
             delete.click();
             System.out.println("Clicked delete button.");
 
-            // Pause briefly to allow dialog to appear
             Thread.sleep(500);
 
-            List<WebElement> confirmButtons = driver.findElements(confirmDeletionButton);
+            List<WebElement> confirmButtons = driver.findElements(CONFIRM_DELETE_BUTTON);
             if (!confirmButtons.isEmpty()) {
                 WebElement confirm = wait.until(ExpectedConditions.elementToBeClickable(confirmButtons.get(0)));
                 confirm.click();
@@ -120,10 +75,69 @@ public class ReminderHomePage {
                 System.out.println("No confirmation dialog appeared. Deletion may be completed automatically.");
             }
 
+            Thread.sleep(1000);
+            List<WebElement> postDeleteCheck = driver.findElements(SELECTED_ELEMENT_CHECK);
+            if (postDeleteCheck.isEmpty()) {
+                System.out.println("All reminders have been successfully deleted.");
+            } else {
+                System.out.println("Some reminders may still remain after deletion.");
+            }
+
         } catch (Exception e) {
             System.out.println("Error during reminder deletion: " + e.getMessage());
         }
     }
 
+
+    public static String convertToDisplayDateTime(String dateText, String hourLabel, String minuteLabel) throws ParseException {
+        String fixedYear = "2025";
+        String fullDateText = dateText + ", " + fixedYear;
+        SimpleDateFormat inputDateFormat = new SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.ENGLISH);
+        Date parsedDate = inputDateFormat.parse(fullDateText);
+        // парсирање на датумот во посакуван излез, пример: Wed,18 Jun
+        SimpleDateFormat outputDateFormat = new SimpleDateFormat("EEE,dd MMM", Locale.ENGLISH);
+        String formattedDate = outputDateFormat.format(parsedDate);
+
+        // парсирање на саатот и минути во соодветен формат за пребарување, пример: 09:00
+        int hour = Integer.parseInt(hourLabel.replace(" o'clock", ""));
+        String minute = minuteLabel.replace(" minutes", "");
+
+        return formattedDate + " " + String.format("%02d:%s", hour, minute);
+    }
+
+
+    public void checkExistenceOfTaskReminder(String title, String dateText, String hourLabel, String minuteLabel) {
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        }
+
+        String formattedTime;
+        try {
+            formattedTime = convertToDisplayDateTime(dateText, hourLabel, minuteLabel);
+        } catch (Exception e) {
+            System.out.println("Failed to format date/time: " + e.getMessage());
+            return;
+        }
+
+        By reminderCard = By.xpath(
+                "//androidx.recyclerview.widget.RecyclerView[@resource-id='com.reminder.callreminder.phone:id/rvTaskReminder']" +
+                        "/android.view.ViewGroup[" +
+                        ".//android.widget.TextView[@resource-id='com.reminder.callreminder.phone:id/tvEventTitle' and @text='" + title + "']" +
+                        " and " +
+                        ".//android.widget.TextView[@resource-id='com.reminder.callreminder.phone:id/tvEventTime' and @text='" + formattedTime + "']" +
+                        "]"
+        );
+
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(reminderCard));
+            System.out.println("Reminder with title \"" + title + "\" and time \"" + formattedTime + "\" is visible.");
+        } catch (Exception e) {
+            System.out.println("Reminder with title \"" + title + "\" and time \"" + formattedTime + "\" not visible.");
+        }
+
+    }
 
 }

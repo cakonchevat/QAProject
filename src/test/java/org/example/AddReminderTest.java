@@ -7,13 +7,15 @@ import org.example.pages.tabs.CommonPageElements;
 import org.example.pages.tabs.ReminderCallPage;
 import org.example.pages.tabs.ReminderHomePage;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
 
-public class DeleteReminderTest {
+public class AddReminderTest {
 
     private AndroidDriver driver;
     private WebDriverWait wait;
@@ -31,37 +33,45 @@ public class DeleteReminderTest {
                 .setNewCommandTimeout(Duration.ofSeconds(300));
 
         driver = new AndroidDriver(new URL("http://127.0.0.1:4723/"), options);
-        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait = new WebDriverWait(driver, Duration.ofSeconds(5));
     }
 
     @Test
-    public void deleteTaskReminders() throws InterruptedException {
-        ReminderHomePage homePage = new ReminderHomePage(driver);
+    public void testAddTaskReminder() {
         CommonPageElements commonPageElements = new CommonPageElements(driver);
+        AddReminderPage addReminderPage = new AddReminderPage(driver, wait);
+        ReminderHomePage homePage = new ReminderHomePage(driver);
 
         commonPageElements.navigateToTab("home");
-        commonPageElements.longPressOnReminderByIndex(1, "task");
-        homePage.deleteAllReminders();
+        commonPageElements.startReminderCreation("task");
+
+        String title = "Task reminder", date = "Wednesday, June 18", hour = "10 o'clock", minutes = "00 minutes";
+        addReminderPage.setTitleFields(title, "Subtitle for task reminder", false);
+        addReminderPage.setDateFields(date, hour, minutes, false);
+        addReminderPage.setSaveReminder(false);
+
+        homePage.checkExistenceOfTaskReminder(title, date, hour, minutes);
     }
 
     @Test
-    public void deleteCallReminder() throws InterruptedException {
+    public void testAddCallReminder() {
         AddReminderPage addReminderPage = new AddReminderPage(driver, wait);
-        ReminderCallPage callPage = new ReminderCallPage(driver);
         CommonPageElements commonPageElements = new CommonPageElements(driver);
+        ReminderCallPage callPage = new ReminderCallPage(driver);
 
         commonPageElements.navigateToTab("call");
         commonPageElements.startReminderCreation("call");
 
-        String callee = "Dragana", title = "Call colleague";
-        addReminderPage.searchCallee(callee);
-        addReminderPage.setTitleFields(title, "Delete this reminder", false);
-        addReminderPage.setDateFields("Wednesday, June 18", "12 o'clock", "00 minutes", false);
+        String person = "Ana";
+        addReminderPage.searchCallee(person);
+
+        String title = "Updated reminder", date = "Monday, June 30", hour = "9 o'clock", minutes = "00 minutes";
+        addReminderPage.setTitleFields(title, "Subtitle for call reminder", false);
+        addReminderPage.setDateFields(date, hour, minutes, false);
         addReminderPage.setSaveReminder(false);
 
-        callPage.checkExistenceOfCallReminder(callee, title, true);
+        callPage.checkExistenceOfCallReminder(person, title, false);
     }
-
 
     @AfterClass
     public void teardown() {
@@ -69,4 +79,5 @@ public class DeleteReminderTest {
             driver.quit();
         }
     }
+
 }

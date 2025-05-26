@@ -2,6 +2,7 @@ package org.example;
 
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.options.UiAutomator2Options;
+import org.example.pages.tabs.CommonPageElements;
 import org.example.pages.tabs.ReminderCallPage;
 import org.example.pages.tabs.ReminderCompletedPage;
 import org.example.pages.tabs.ReminderHomePage;
@@ -36,16 +37,15 @@ public class CompleteReminderTest {
     @Test
     public void completeActiveReminders() {
         ReminderHomePage homePage = new ReminderHomePage(driver);
-        ReminderCallPage callPage = new ReminderCallPage(driver);
         ReminderCompletedPage completedPage = new ReminderCompletedPage(driver);
+        CommonPageElements commonPageElements = new CommonPageElements(driver);
 
-        homePage.navigateToTaskTab();
-        homePage.completeAllReminders();
+        commonPageElements.navigateToTab("home");
+        String title = "Task reminder";
+        homePage.completeReminder(title);
 
-        callPage.navigateToCallTab();
-        callPage.completeSomeReminders();
-
-        completedPage.navigateToCompletedTab();
+        commonPageElements.navigateToTab("completed");
+        completedPage.checkExistenceOfCompletedReminder(title);
     }
 
 
